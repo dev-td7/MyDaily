@@ -46,14 +46,7 @@ public class TaskAdapter extends ArrayAdapter<TaskSelector.Task> {
             p = new PlaceHolder();
             p.time = time;
             p.data = task;
-
-            delete.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    TaskSelector.deleteTask(data.get(position).id,data.get(position).name);
-                    remove(data.get(position));
-                }
-            });
+            p.deleteTask = delete;
 
             row.setTag(p);
         }
@@ -65,6 +58,13 @@ public class TaskAdapter extends ArrayAdapter<TaskSelector.Task> {
         p.time.setText(time);
         p.data.setText(data.get(position).name);
         p.id = data.get(position).id;
+        p.deleteTask.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                TaskSelector.deleteTask(data.get(position).id,data.get(position).name);
+                remove(data.get(position));
+            }
+        });
 
         return row;
     }

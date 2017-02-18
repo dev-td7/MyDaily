@@ -5,6 +5,7 @@ import android.app.Dialog;
 import android.content.ContentResolver;
 import android.content.ContentUris;
 import android.content.ContentValues;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
@@ -18,6 +19,7 @@ import android.os.Bundle;
 import android.provider.CalendarContract;
 import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
+import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
@@ -34,6 +36,7 @@ import android.widget.ListView;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.TimePicker;
+import android.widget.Toast;
 
 import java.util.Date;
 import java.util.GregorianCalendar;
@@ -53,6 +56,8 @@ public class TaskSelector extends AppCompatActivity {
     static final int CALENDAR_ID = 1;    //Default Calendar
     static BackgroundHandler deleter;
     static boolean hasPermission = false;
+    static final String DEFAULT_EVENT_NAME = "My Task";
+    static Vector<Task> v;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -162,7 +167,7 @@ public class TaskSelector extends AppCompatActivity {
         deleter.execute(3,taskName);
     }
 
-    private class BackgroundHandler extends AsyncTask {
+    public class BackgroundHandler extends AsyncTask {
         TaskAdapter aa;
 
         @Override
@@ -190,7 +195,7 @@ public class TaskSelector extends AppCompatActivity {
                 result.moveToFirst();
 
                 int i = 0;
-                Vector<Task> v = new Vector<>();
+                v = new Vector<>();
                 System.out.println(result.getCount());
                 while (i != result.getCount()) {
                     Task t = new Task(result.getString(1), result.getString(0), result.getInt(2));
@@ -209,6 +214,11 @@ public class TaskSelector extends AppCompatActivity {
                 String name = (String) params[1];
                 String time = (String) params[2];
 
+                if(name.equals("")){
+                    name = DEFAULT_EVENT_NAME;
+                    publishProgress(1,1);
+                }
+
                 int day = dt.getDate(), month = dt.getMonth(), yr = dt.getYear();
                 System.out.println("Adding task at " + day + " " + month + " " + yr + " " + time + " " + name);
                 db.execSQL("insert into MyTasks values(" + nextId + "," + day + "," + month + "," + yr + ",'" + time + "','" + name + "')");
@@ -219,7 +229,7 @@ public class TaskSelector extends AppCompatActivity {
                     requestPermissions(new String[]{Manifest.permission.WRITE_CALENDAR},1);
                 }
                 else{
-                    publishProgress(1);
+                    publishProgress(1,0);
                 }
             }
 
@@ -237,7 +247,7 @@ public class TaskSelector extends AppCompatActivity {
                 int hr, min;
                 if (time.equals("All Day")) {
                     hr = 0;
-                    min = 0;
+                    min = 1;
                     values.put(CalendarContract.Events.ALL_DAY, 1);
                 } else {
                     hr = Integer.parseInt(time.substring(0, 2));
@@ -327,7 +337,17 @@ public class TaskSelector extends AppCompatActivity {
                 }
             }
             else if(mode == 1){
-                new BackgroundHandler().execute(2);
+                int submode = (int) values[1];
+                if(submode==0)
+                    new BackgroundHandler().execute(2);
+                else if(submode==1)
+                    Snackbar.make(findViewById(R.id.fab),"Event added successfully",Snackbar.LENGTH_LONG)
+                            .setAction("Undo", new View.OnClickListener() {
+                                @Override
+                                public void onClick(View v) {
+                                    Toast.makeText(TaskSelector.this, "Try this after next update", Toast.LENGTH_SHORT).show();
+                                }
+                            });
             }
         }
     }
@@ -368,6 +388,10 @@ public class TaskSelector extends AppCompatActivity {
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
             return true;
+        }
+        if(id == R.id.todaysTasks){
+            Intent in = new Intent(getApplicationContext(),TodaysTasksActivity.class);
+            startActivity(in);
         }
 
         return super.onOptionsItemSelected(item);
